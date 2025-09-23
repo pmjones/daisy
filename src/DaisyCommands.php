@@ -282,7 +282,7 @@ class DaisyCommands
         $before = $this->getBranchBefore($daisy);
 
         $this->cli->runOrThrow(
-            "git rebase --allow-empty {$before}",
+            "git rebase --update-refs --allow-empty {$before}",
             "Could not rebase using {$before}",
         );
 
