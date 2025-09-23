@@ -275,7 +275,7 @@ class DaisyCommands
         if ($this->hasUpstream()) {
             $this->cli->runOrThrow(
                 "git pull",
-                "Could not pull remote changes before rebasinng.",
+                "Could not pull remote changes before rebasing.",
             );
         }
 
@@ -583,7 +583,8 @@ class DaisyCommands
                     to origin, setting the upstream if not already set.
 
                 sync
-                    Rebases the current numbered branch in the daisy chain on
+                    Pulls from the remote origin (if there is one), then
+                    rebases the current numbered branch in the daisy chain on
                     the previous one. If on the first numbered branch in the
                     daisy chain, rebases on the root branch.
 
