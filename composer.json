@@ -1,0 +1,45 @@
+{
+    "name": "pmjones/daisy",
+    "type": "library",
+    "description": "",
+    "keywords": [],
+    "license": "MIT",
+    "homepage": "https://github.com/pmjones/daisy",
+    "authors": [
+        {
+            "name": "Paul M. Jones",
+            "email": "pmjones@pmjones.io",
+            "homepage": "https://pmjones.io",
+            "role": "Lead"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "pmjones/stdlog": "^1.0"
+    },
+    "autoload": {
+        "psr-4" : {
+            "pmjones\\Daisy\\": "src/"
+        }
+    },
+    "require-dev": {
+        "pds/composer-script-names": "^1.0",
+        "pds/skeleton": "^1.0",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload-dev": {
+        "psr-4" : {
+            "pmjones\\Daisy\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/daisy"
+    ],
+    "scripts": {
+        "analyze": "./vendor/bin/phpstan",
+        "check": "composer analyze",
+        "test": "./vendor/bin/phpunit",
+        "test-coverage": "./vendor/bin/phpunit --coverage-html=./tmp/coverage"
+    }
+}

@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+$files = [
+    dirname(__DIR__) . '/vendor/autoload.php',
+    dirname(__DIR__, 4) . '/vendor/autoload.php',
+];
+
+foreach ($files as $file) {
+    if (file_exists($file)) {
+        require $file;
+        break;
+    }
+}
+
+$opts = getopt('v', ['verbose'], $rest_index);
+$daisyCommands = new pmjones\Daisy\DaisyCommands();
+
+exit(
+    $daisyCommands(
+        array_slice($argv, $rest_index),
+        (bool) (isset($opts['v']) || isset($opts['verbose']))
+    )
+);
