@@ -73,7 +73,7 @@ class DaisyCommands
         );
 
         $this->cli->runOrThrow(
-            "git commit --allow-empty -m ':daisy-chain-root {$root}'",
+            "git commit --allow-empty --message=':daisy-chain-root {$root}'",
             "Could not commit to daisy chain branch {$start->branch}.",
         );
 
@@ -92,7 +92,7 @@ class DaisyCommands
         );
 
         $this->cli->runOrThrow(
-            "git commit --allow-empty -m ':daisy-chain-add {$first->branch}'",
+            "git commit --allow-empty --message=':daisy-chain-add {$first->branch}'",
             "Could not commit to daisy chain branch {$first->branch}",
         );
 
@@ -119,8 +119,10 @@ class DaisyCommands
             "Could not add daisy chain branch {$add->branch}",
         );
 
+        $message = ":daisy-chain-add {$add->branch}";
+
         $this->cli->runOrThrow(
-            "git commit --allow-empty -m ':daisy-chain-add {$add->branch}'",
+            "git commit --allow-empty --message={$message}",
             "Could not commit to daisy chain branch {$add->branch}",
         );
 
@@ -250,14 +252,11 @@ class DaisyCommands
 
     public function send() : int
     {
-        $this->cli->info("Sending the daisy chain branch to origin.");
         $daisy = $this->getDaisy();
 
-        $this->hasUpstream()
+        return $this->hasUpstream()
             ? $this->forcePushWithLease($daisy->branch)
-            : $this->pushAndSetUpstream($daisy->branch);
-
-        return $this->status();
+            : $this->setUpstreamAndPush($daisy->branch);
     }
 
     public function diff() : int
@@ -387,24 +386,30 @@ class DaisyCommands
         return ! $result->exitCode;
     }
 
-    protected function pushAndSetUpstream(string $branch) : void
+    protected function setUpstreamAndPush(string $branch) : int
     {
+        $this->cli->info("Setting upstream and pushing.");
+
         $this->cli->runOrThrow(
             "git push -u origin {$branch}",
-            "Could not push and set upstream for daisy chain branch {$branch}.",
+            "Could set upstream and push daisy chain branch {$branch}.",
         );
 
-        $this->cli->info("Pushed daisy chain branch {$branch} and set upstream.");
+        return $this->cli->info(
+            "Set upstream and pushed daisy chain branch {$branch}."
+        );
     }
 
-    protected function forcePushWithLease(string $branch) : void
+    protected function forcePushWithLease(string $branch) : int
     {
+        $this->cli->info("Force-pushing.");
+
         $this->cli->runOrThrow(
             "git push --force-with-lease",
             "Could not force-push daisy chain branch {$branch}.",
         );
 
-        $this->cli->info("Force-pushed daisy chain branch {$branch}.");
+        return $this->cli->info("Force-pushed daisy chain branch {$branch}.");
     }
 
     protected function getCurrentBranch() : string
