@@ -182,7 +182,12 @@ class DaisyCommands
             return $this->cli->error("Already at last branch.");
         }
 
-        $key = ((int) array_search($daisy->branch, $chain)) + (int) $steps;
+        if ($daisy->number === null) {
+            // on the "start" branch.
+            $key = $steps - 1;
+        } else {
+            $key = ((int) array_search($daisy->branch, $chain)) + (int) $steps;
+        }
 
         /** @var string|false $next */
         $next = $chain[$key] ?? end($chain);
