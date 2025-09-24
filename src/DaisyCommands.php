@@ -149,9 +149,18 @@ class DaisyCommands
         return $this->branch();
     }
 
-    public function prev(?string $steps = '1') : int
+    public function prev(?string $steps = null) : int
     {
         $daisy = $this->getDaisy();
+        $steps ??= '1';
+
+        if (! ctype_digit($steps)) {
+            return $this->cli->error(
+                "Specify a whole number of steps, or nothing at all.",
+            );
+        }
+
+        $steps = (int) $steps;
         $chain = $this->getChain();
         $first = reset($chain);
 
@@ -159,7 +168,7 @@ class DaisyCommands
             return $this->cli->error("Already at first branch.");
         }
 
-        $key = ((int) array_search($daisy->branch, $chain)) - (int) $steps;
+        $key = (int) array_search($daisy->branch, $chain) - $steps;
 
         /** @var string|false $prev */
         $prev = $chain[$key] ?? reset($chain);
@@ -172,9 +181,18 @@ class DaisyCommands
         return $this->branch();
     }
 
-    public function next(?string $steps = '1') : int
+    public function next(?string $steps = null) : int
     {
         $daisy = $this->getDaisy();
+        $steps ??= '1';
+
+        if (! ctype_digit($steps)) {
+            return $this->cli->error(
+                "Specify a whole number of steps, or nothing at all.",
+            );
+        }
+
+        $steps = (int) $steps;
         $chain = $this->getChain();
         $last = end($chain);
 
@@ -186,7 +204,7 @@ class DaisyCommands
             // on the "start" branch.
             $key = $steps - 1;
         } else {
-            $key = ((int) array_search($daisy->branch, $chain)) + (int) $steps;
+            $key = (int) array_search($daisy->branch, $chain) + $steps;
         }
 
         /** @var string|false $next */
