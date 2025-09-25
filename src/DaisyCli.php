@@ -46,7 +46,11 @@ class DaisyCli
 
     public function runOrThrow(string $command, string $message) : DaisyCli_Result
     {
+        $result = $this->run("git config --get color.ui");
+        $color = $result->lastLine;
+        $this->run("git config --set color.ui always");
         $result = $this->run($command);
+        $this->run("git config --set color.ui {$color}");
 
         if ($result->exitCode) {
             $message .= PHP_EOL . PHP_EOL . implode(PHP_EOL, $result->output);
