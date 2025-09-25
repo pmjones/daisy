@@ -60,7 +60,7 @@ class DaisyCommands
 
         if (Daisy::isValid($root)) {
             return $this->cli->error(
-                'Current branch is already part of a daisy chain: {$root)',
+                "Current branch is already part of a daisy chain: {$root}",
             );
         }
 
