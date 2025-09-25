@@ -302,33 +302,42 @@ class DaisyCommands
     public function sync() : int
     {
         $daisy = $this->getDaisy();
-
-        if ($this->hasUpstream()) {
-            $result = $this->cli->run("git pull");
-
-            if ($result->exitCode) {
-                return $this->cli->error(
-                    <<<MESSAGE
-
-                    Could not pull cleanly from remote. Issue the following ...
-
-                        git pull
-
-                    ... to pull manually instead.
-
-                    MESSAGE
-                );
-            }
-        }
-
         $before = $this->getBranchBefore($daisy);
 
+        return $this->hasUpstream()
+            ? $this->pullThenRebase($before)
+            : $this->rebase($before);
+    }
+
+    protected function pullThenRebase(string $before) : int
+    {
+        $result = $this->cli->run("git pull");
+
+        if (! $result->exitCode) {
+            return $this->rebase($before);
+        }
+
+        return $this->cli->error(
+            <<<MESSAGE
+
+            Could not pull cleanly from remote. Issue the following ...
+
+                git pull
+
+            ... to pull manually instead.
+
+            MESSAGE
+        );
+    }
+
+    protected function rebase(string $before) : int
+    {
         $result = $this->cli->run(
             "git rebase --update-refs --allow-empty {$before}",
         );
 
         if (! $result->exitCode) {
-            return $this->cli->info("Now in sync with with {$before}");
+            return $this->cli->info("Now in sync with with {$before}.");
         }
 
         $this->cli->run("git rebase --abort");
@@ -338,7 +347,7 @@ class DaisyCommands
 
             Could not rebase cleanly on {$before}. Issue the following ...
 
-                git rebase -i --update-refs --allow-empty {$before}
+                git rebase --update-refs --allow-empty {$before}
 
             ... to rebase manually instead.
 
