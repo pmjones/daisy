@@ -295,20 +295,46 @@ class DaisyCommands
         $daisy = $this->getDaisy();
 
         if ($this->hasUpstream()) {
-            $this->cli->runOrThrow(
-                "git pull",
-                "Could not pull remote changes before rebasing.",
-            );
+            $result = $this->cli->run("git pull");
+
+            if ($result->exitCode) {
+                return $this->cli->error(
+                    <<<MESSAGE
+
+                    Could not pull cleanly from remote. Issue the following ...
+
+                        git pull
+
+                    ... to pull manually instead.
+
+                    MESSAGE
+                );
+            }
         }
 
         $before = $this->getBranchBefore($daisy);
 
-        $this->cli->runOrThrow(
+        $result = $this->cli->run(
             "git rebase --update-refs --allow-empty {$before}",
-            "Could not rebase using {$before}",
         );
 
-        return $this->cli->info("Now in sync with with {$before}");
+        if (! $result->exitCode) {
+            return $this->cli->info("Now in sync with with {$before}");
+        }
+
+        $this->cli->run("git rebase --abort");
+
+        return $this->cli->error(
+            <<<MESSAGE
+
+            Could not rebase cleanly on {$before}. Issue the following ...
+
+                git rebase -i --update-refs --allow-empty {$before}
+
+            ... to rebase manually instead.
+
+            MESSAGE
+        );
     }
 
     public function open() : int
