@@ -270,7 +270,7 @@ class DaisyCommands
     public function chain() : int
     {
         $chain = $this->getChain();
-        return $this->cli->info(implode(PHP_EOL, $chain));
+        return $this->cli->info($chain);
     }
 
     public function send() : int
@@ -287,7 +287,7 @@ class DaisyCommands
         $daisy = $this->getDaisy();
         $before = $this->getBranchBefore($daisy);
         $result = $this->cli->run("git diff --minimal {$before}");
-        return $this->cli->info(implode(PHP_EOL, $result->output) . PHP_EOL);
+        return $this->cli->info($result->output);
     }
 
     public function sync() : int
@@ -531,8 +531,7 @@ class DaisyCommands
     protected function status() : int
     {
         $result = $this->cli->run('git status');
-        echo implode(PHP_EOL, $result->output) . PHP_EOL;
-        return $result->exitCode;
+        return $this->cli->info($result->output);
     }
 
     public function help() : int

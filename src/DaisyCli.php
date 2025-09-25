@@ -60,14 +60,22 @@ class DaisyCli
         return $result;
     }
 
-    public function error(string $message, int $exitCode = 1) : int
+    public function error(string|array $message, int $exitCode = 1) : int
     {
+        if (is_array($message)) {
+            $message = implode(PHP_EOL, $message);
+        }
+
         $this->logger->error($message);
         return $exitCode;
     }
 
-    public function info(string $message) : int
+    public function info(string|array $message) : int
     {
+        if (is_array($message)) {
+            $message = implode(PHP_EOL, $message);
+        }
+
         $this->logger->info($message);
         return 0;
     }
