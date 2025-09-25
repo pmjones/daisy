@@ -56,6 +56,9 @@ class DaisyCli
         return $result;
     }
 
+    /**
+     * @param string|string[] $message
+     */
     public function error(string|array $message, int $exitCode = 1) : int
     {
         if (is_array($message)) {
@@ -66,6 +69,9 @@ class DaisyCli
         return $exitCode;
     }
 
+    /**
+     * @param string|string[] $message
+     */
     public function info(string|array $message) : int
     {
         if (is_array($message)) {

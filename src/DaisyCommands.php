@@ -207,7 +207,7 @@ class DaisyCommands
             $key = (int) array_search($daisy->branch, $chain) + $steps;
         }
 
-        /** @var string|false $next */
+        /** @var string $next */
         $next = $chain[$key] ?? end($chain);
 
         $this->cli->runOrThrow(
