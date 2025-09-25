@@ -294,27 +294,27 @@ class DaisyCommands
         }
 
         $options = "--minimal --color=" . ($plain ? "never" : "always");
-        $before = $this->getBranchBefore($daisy);
-        $result = $this->cli->run("git diff {$options} {$before}");
+        $prev = $this->getPrevBranch($daisy);
+        $result = $this->cli->run("git diff {$options} {$prev}");
         return $this->cli->info($result->output);
     }
 
     public function sync() : int
     {
         $daisy = $this->getDaisy();
-        $before = $this->getBranchBefore($daisy);
+        $prev = $this->getPrevBranch($daisy);
 
         return $this->hasUpstream()
-            ? $this->pullThenRebase($before)
-            : $this->rebase($before);
+            ? $this->pullThenRebase($prev)
+            : $this->rebase($prev);
     }
 
-    protected function pullThenRebase(string $before) : int
+    protected function pullThenRebase(string $prev) : int
     {
         $result = $this->cli->run("git pull");
 
         if (! $result->exitCode) {
-            return $this->rebase($before);
+            return $this->rebase($prev);
         }
 
         return $this->cli->error(
@@ -330,14 +330,14 @@ class DaisyCommands
         );
     }
 
-    protected function rebase(string $before) : int
+    protected function rebase(string $prev) : int
     {
         $result = $this->cli->run(
-            "git rebase --update-refs --allow-empty {$before}",
+            "git rebase --update-refs --allow-empty {$prev}",
         );
 
         if (! $result->exitCode) {
-            return $this->cli->info("Now in sync with with {$before}.");
+            return $this->cli->info("Now in sync with with {$prev}.");
         }
 
         $this->cli->run("git rebase --abort");
@@ -345,9 +345,9 @@ class DaisyCommands
         return $this->cli->error(
             <<<MESSAGE
 
-            Could not rebase cleanly on {$before}. Issue the following ...
+            Could not rebase cleanly on {$prev}. Issue the following ...
 
-                git rebase --update-refs --allow-empty {$before}
+                git rebase --update-refs --allow-empty {$prev}
 
             ... to rebase manually instead.
 
@@ -376,8 +376,8 @@ class DaisyCommands
         }
 
         $daisy = $this->getDaisy();
-        $before = $this->getBranchBefore($daisy);
-        $url = "https://github.com/{$owner}/{$repo}/compare/{$before}...{$daisy->branch}";
+        $prev = $this->getPrevBranch($daisy);
+        $url = "https://github.com/{$owner}/{$repo}/compare/{$prev}...{$daisy->branch}";
         return $this->cli->run("open {$url}")->exitCode;
     }
 
@@ -503,7 +503,7 @@ class DaisyCommands
         return $daisy;
     }
 
-    protected function getBranchBefore(Daisy $daisy) : string
+    protected function getPrevBranch(Daisy $daisy) : string
     {
         $chain = $this->getChain();
         $key = ((int) array_search($daisy->branch, $chain)) - 1;
