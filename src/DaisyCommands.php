@@ -282,11 +282,20 @@ class DaisyCommands
             : $this->setUpstreamAndPush($daisy->branch);
     }
 
-    public function diff() : int
+    public function diff(?string $plain = null) : int
     {
         $daisy = $this->getDaisy();
+        $plain = strtolower($plain ?? '');
+
+        if ($plain !== '' && $plain !== 'plain') {
+            return $this->cli->error(
+                "Specify 'plain' or nothing at all."
+            );
+        }
+
+        $options = "--minimal --color=" . ($plain ? "never" : "always");
         $before = $this->getBranchBefore($daisy);
-        $result = $this->cli->run("git diff --minimal {$before}");
+        $result = $this->cli->run("git diff {$options} {$before}");
         return $this->cli->info($result->output);
     }
 
@@ -608,11 +617,12 @@ class DaisyCommands
                 chain
                     Shows the list of branches in the daisy chain.
 
-                diff
-                    Shows the diff between the current branch in the daisy
-                    and the previous one. If on the first branch in the
-                    daisy chain, shows the diff between the current branch
-                    and the root branch.
+                diff [plain]
+                    Shows the color diff between the current branch in the
+                    daisy chain and the previous one. If on the first branch in
+                    the daisy chain, shows the diff between the current branch
+                    and the root branch. Passing 'plain' shows a plain (not
+                    color) diff.
 
             Deletion Commands:
 
