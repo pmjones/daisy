@@ -140,10 +140,10 @@ Creation Commands:
 
     start <name>
         Starts a new daisy chain of branches with the <name>
-        prefix by creating a non-numbered "start" branch with
-        an empty commit with a message indicating the "root"
-        branch of the daisy chain. DO NOT work on this branch.
-        It is for tracking the "root" branch only.
+        prefix by creating a non-numbered "start" branch with an
+        empty commit with a message indicating the "root" branch of
+        the daisy chain. DO NOT work on this branch. It is for
+        tracking the "root" branch only.
 
     add
         Adds a numbered branch to the end of the daisy chain.
@@ -176,11 +176,10 @@ Info Commands:
     chain
         Shows the list of branches in the daisy chain.
 
-    diff
-        Shows the diff between the current branch in the daisy
-        and the previous one. If on the first branch in the
-        daisy chain, shows the diff between the current branch
-        and the root branch.
+    diff [plain]
+        Shows the color diff between the current branch in the daisy
+        chain and the previous branch (numbered or "root"). Passing
+        'plain' shows a plain (not color) diff.
 
 Deletion Commands:
 
@@ -204,7 +203,7 @@ Management Commands:
         to origin, setting the upstream if not already set.
 
     sync
-        Rebases the current numbered branch in the daisy chain on
-        the previous one. If on the first numbered branch in the
-        daisy chain, rebases on the root branch.
+        Pulls from the remote origin (if there is one), then
+        rebases the current numbered branch in the daisy chain on
+        the previous branch (numbered or "root").
 ```
