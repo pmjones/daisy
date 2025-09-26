@@ -485,7 +485,7 @@ class DaisyCommands
 
         $this->cli->runOrThrow(
             "git push -u origin {$daisy->branch}",
-            "Could set upstream and push daisy chain branch {$daisy->branch}.",
+            "Could not set upstream and push daisy chain branch {$daisy->branch}.",
         );
 
         return $this->cli->info(
