@@ -372,9 +372,9 @@ class DaisyCommands
 
             Could not rebase cleanly on {$prev}. Issue the following ...
 
-                git rebase --update-refs --allow-empty {$prev}
+                git rebase -i --update-refs --allow-empty {$prev}
 
-            ... to rebase manually instead.
+            ... to rebase interactively instead.
 
             MESSAGE
         );
