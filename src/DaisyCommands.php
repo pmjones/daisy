@@ -134,7 +134,12 @@ class DaisyCommands
         $daisy = $this->getDaisy();
         $chain = $this->getChain();
 
-        /** @var string|false */
+        if (! $chain) {
+            return $this->cli->error(
+                "There are no branches in this daisy chain."
+            );
+        }
+
         $first = reset($chain);
 
         if ($daisy->branch === $first) {
@@ -162,6 +167,13 @@ class DaisyCommands
 
         $steps = (int) $steps;
         $chain = $this->getChain();
+
+        if (! $chain) {
+            return $this->cli->error(
+                "There are no branches in this daisy chain."
+            );
+        }
+
         $first = reset($chain);
 
         if ($daisy->branch === $first) {
@@ -169,8 +181,6 @@ class DaisyCommands
         }
 
         $key = (int) array_search($daisy->branch, $chain) - $steps;
-
-        /** @var string|false $prev */
         $prev = $chain[$key] ?? reset($chain);
 
         $this->cli->runOrThrow(
@@ -194,6 +204,13 @@ class DaisyCommands
 
         $steps = (int) $steps;
         $chain = $this->getChain();
+
+        if (! $chain) {
+            return $this->cli->error(
+                "There are no branches in this daisy chain."
+            );
+        }
+
         $last = end($chain);
 
         if ($daisy->branch === $last) {
@@ -207,7 +224,6 @@ class DaisyCommands
             $key = (int) array_search($daisy->branch, $chain) + $steps;
         }
 
-        /** @var string $next */
         $next = $chain[$key] ?? end($chain);
 
         $this->cli->runOrThrow(
@@ -223,7 +239,12 @@ class DaisyCommands
         $daisy = $this->getDaisy();
         $chain = $this->getChain();
 
-        /** @var string|false $last */
+        if (! $chain) {
+            return $this->cli->error(
+                "There are no branches in this daisy chain."
+            );
+        }
+
         $last = end($chain);
 
         if ($daisy->branch === $last) {
@@ -275,11 +296,9 @@ class DaisyCommands
 
     public function send() : int
     {
-        $daisy = $this->getDaisy();
-
         return $this->hasUpstream()
-            ? $this->forcePushWithLease($daisy->branch)
-            : $this->setUpstreamAndPush($daisy->branch);
+            ? $this->forcePushWithLease()
+            : $this->setUpstreamAndPush();
     }
 
     public function diff(?string $plain = null) : int
@@ -293,28 +312,31 @@ class DaisyCommands
             );
         }
 
-        $options = "--minimal --color=" . ($plain ? "never" : "always");
+        $color = $plain ? "never" : "always";
         $prev = $this->getPrevBranch($daisy);
-        $result = $this->cli->run("git diff {$options} {$prev}");
+
+        $result = $this->cli->run(
+            "git diff --minimal --color={$color} {$prev}"
+        );
+
         return $this->cli->info($result->output);
     }
 
     public function sync() : int
     {
-        $daisy = $this->getDaisy();
-        $prev = $this->getPrevBranch($daisy);
+        $this->assertDaisy();
 
         return $this->hasUpstream()
-            ? $this->pullThenRebase($prev)
-            : $this->rebase($prev);
+            ? $this->pullThenRebase()
+            : $this->rebase();
     }
 
-    protected function pullThenRebase(string $prev) : int
+    protected function pullThenRebase() : int
     {
         $result = $this->cli->run("git pull");
 
         if (! $result->exitCode) {
-            return $this->rebase($prev);
+            return $this->rebase();
         }
 
         return $this->cli->error(
@@ -330,8 +352,11 @@ class DaisyCommands
         );
     }
 
-    protected function rebase(string $prev) : int
+    protected function rebase() : int
     {
+        $daisy = $this->getDaisy();
+        $prev = $this->getPrevBranch($daisy);
+
         $result = $this->cli->run(
             "git rebase --update-refs --allow-empty {$prev}",
         );
@@ -383,12 +408,12 @@ class DaisyCommands
 
     public function drop(?string $where) : int
     {
-        return $this->deleteBranch('drop', (string) $where);
+        return $this->deleteBranch('drop', '-d', (string) $where);
     }
 
     public function kill(?string $where) : int
     {
-        return $this->deleteBranch('kill', (string) $where);
+        return $this->deleteBranch('kill', '-D', (string) $where);
     }
 
     protected function isCommand(string $method) : bool
@@ -402,7 +427,7 @@ class DaisyCommands
         return $rm->isPublic();
     }
 
-    protected function deleteBranch(string $type, string $where) : int
+    protected function deleteBranch(string $type, string $option, string $where) : int
     {
         $daisy = $this->getDaisy();
         $where = strtolower($where);
@@ -415,7 +440,12 @@ class DaisyCommands
 
         $chain = $this->getChain();
 
-        /** @var int $key */
+        if (! $chain) {
+            return $this->cli->error(
+                "There are no branches in this daisy chain."
+            );
+        }
+
         $key = match ($where) {
             'first' => reset($chain),
             'prev' => ((int) array_search($daisy->branch, $chain)) - 1,
@@ -434,11 +464,6 @@ class DaisyCommands
             return $this->cli->error("Cannot {$type} current branch.");
         }
 
-        $option = match ($type) {
-            'kill' => '-D',
-            default => '-d',
-        };
-
         $this->cli->runOrThrow(
             "git branch {$option} {$branch}",
             "Could not delete branch {$branch}.",
@@ -453,30 +478,34 @@ class DaisyCommands
         return ! $result->exitCode;
     }
 
-    protected function setUpstreamAndPush(string $branch) : int
+    protected function setUpstreamAndPush() : int
     {
+        $daisy = $this->getDaisy();
         $this->cli->info("Setting upstream and pushing.");
 
         $this->cli->runOrThrow(
-            "git push -u origin {$branch}",
-            "Could set upstream and push daisy chain branch {$branch}.",
+            "git push -u origin {$daisy->branch}",
+            "Could set upstream and push daisy chain branch {$daisy->branch}.",
         );
 
         return $this->cli->info(
-            "Set upstream and pushed daisy chain branch {$branch}."
+            "Set upstream and pushed daisy chain branch {$daisy->branch}."
         );
     }
 
-    protected function forcePushWithLease(string $branch) : int
+    protected function forcePushWithLease() : int
     {
+        $daisy = $this->getDaisy();
         $this->cli->info("Force-pushing.");
 
         $this->cli->runOrThrow(
             "git push --force-with-lease",
-            "Could not force-push daisy chain branch {$branch}.",
+            "Could not force-push daisy chain branch {$daisy->branch}.",
         );
 
-        return $this->cli->info("Force-pushed daisy chain branch {$branch}.");
+        return $this->cli->info(
+            "Force-pushed daisy chain branch {$daisy->branch}."
+        );
     }
 
     protected function getCurrentBranch() : string
@@ -487,6 +516,11 @@ class DaisyCommands
         );
 
         return $result->lastLine;
+    }
+
+    protected function assertDaisy() : void
+    {
+        $this->getDaisy();
     }
 
     protected function getDaisy() : Daisy
