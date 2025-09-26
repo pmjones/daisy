@@ -60,7 +60,7 @@ class DaisyCommands
 
         if (Daisy::isValid($root)) {
             return $this->cli->error(
-                "Current branch is already part of a daisy chain: {$root}",
+                "Current branch is already part of a daisy chain: {$root}.",
             );
         }
 
@@ -93,7 +93,7 @@ class DaisyCommands
 
         $this->cli->runOrThrow(
             "git commit --allow-empty --message=':daisy-chain-add {$first->branch}'",
-            "Could not commit to daisy chain branch {$first->branch}",
+            "Could not commit to daisy chain branch {$first->branch}.",
         );
 
         return $this->status();
@@ -116,14 +116,14 @@ class DaisyCommands
 
         $this->cli->runOrThrow(
             "git checkout -b {$add->branch}",
-            "Could not add daisy chain branch {$add->branch}",
+            "Could not add daisy chain branch {$add->branch}.",
         );
 
         $message = ":daisy-chain-add {$add->branch}";
 
         $this->cli->runOrThrow(
             "git commit --allow-empty --message={$message}",
-            "Could not commit to daisy chain branch {$add->branch}",
+            "Could not commit to daisy chain branch {$add->branch}.",
         );
 
         return $this->status();
@@ -276,7 +276,7 @@ class DaisyCommands
 
         $this->cli->runOrThrow(
             "git switch {$branch}",
-            "Could not switch to root branch {$branch}",
+            "Could not switch to root branch {$branch}.",
         );
 
         return $this->cli->info($this->getCurrentBranch());
@@ -390,7 +390,7 @@ class DaisyCommands
         $origin = $result->lastLine;
 
         if (! preg_match('#^.+:(.+)/(.+)$#', $origin, $matches)) {
-            return $this->cli->error("Could not parse origin URL: {$origin}");
+            return $this->cli->error("Could not parse origin URL: {$origin}.");
         }
 
         $owner = $matches[1];
@@ -530,7 +530,7 @@ class DaisyCommands
 
         if (! $daisy) {
             throw new RuntimeException(
-                "This branch does not look like part of a daisy chain: {$branch}"
+                "This branch does not look like part of a daisy chain: {$branch}."
             );
         }
 
