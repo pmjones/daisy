@@ -104,15 +104,13 @@ class DaisyCommands
         $this->cli->info("Adding a new branch to the daisy chain.");
         $daisy = $this->getDaisy();
         $chain = $this->getChain();
-        $last = array_pop($chain);
+        $add = $daisy->withNextNumber();
 
-        if ($daisy->branch !== $last) {
+        if (in_array($add->branch, $chain)) {
             return $this->cli->error(
-                'Not on the last branch in the daisy chain.',
+                "Cannot add daisy chain branch {$add->branch} because it already exists.",
             );
         }
-
-        $add = $daisy->withNextNumber();
 
         $this->cli->runOrThrow(
             "git checkout -b {$add->branch}",
@@ -122,8 +120,8 @@ class DaisyCommands
         $message = ":daisy-chain-add {$add->branch}";
 
         $this->cli->runOrThrow(
-            "git commit --allow-empty --message={$message}",
-            "Could not commit to daisy chain branch {$add->branch}.",
+            "git commit --allow-empty --message='{$message}'",
+            "Could not commit to added daisy chain branch {$add->branch}.",
         );
 
         return $this->status();
@@ -316,7 +314,7 @@ class DaisyCommands
         $prev = $this->getPrevBranch($daisy);
 
         $result = $this->cli->run(
-            "git diff --minimal --color={$color} {$prev}"
+            "git diff --color={$color} {$prev}"
         );
 
         return $this->cli->info($result->output);
