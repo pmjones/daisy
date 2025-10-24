@@ -103,6 +103,13 @@ class DaisyCommands
     {
         $this->cli->info("Adding a new branch to the daisy chain.");
         $daisy = $this->getDaisy();
+
+        if ($daisy->suffix) {
+            return $this->cli->error(
+                "Cannot add a daisy chain branch from a temporary branch.",
+            );
+        }
+
         $chain = $this->getChain();
         $add = $daisy->withNextNumber();
 
@@ -129,7 +136,7 @@ class DaisyCommands
 
     public function first() : int
     {
-        $daisy = $this->getDaisy();
+        $daisy = $this->getDaisy()->withoutSuffix();
         $chain = $this->getChain();
 
         if (! $chain) {
@@ -155,6 +162,18 @@ class DaisyCommands
     public function prev(?string $steps = null) : int
     {
         $daisy = $this->getDaisy();
+
+        if ($daisy->suffix) {
+            $prev = $daisy->withoutSuffix()->branch;
+
+            $this->cli->runOrThrow(
+                "git switch {$prev}",
+                "Could not switch to daisy chain branch {$prev}.",
+            );
+
+            return $this->branch();
+        }
+
         $steps ??= '1';
 
         if (! ctype_digit($steps)) {
@@ -191,7 +210,7 @@ class DaisyCommands
 
     public function next(?string $steps = null) : int
     {
-        $daisy = $this->getDaisy();
+        $daisy = $this->getDaisy()->withoutSuffix();
         $steps ??= '1';
 
         if (! ctype_digit($steps)) {
@@ -234,7 +253,7 @@ class DaisyCommands
 
     public function last() : int
     {
-        $daisy = $this->getDaisy();
+        $daisy = $this->getDaisy()->withoutSuffix();
         $chain = $this->getChain();
 
         if (! $chain) {
@@ -259,25 +278,34 @@ class DaisyCommands
 
     public function goto(?string $where = null) : int
     {
-        $daisy = $this->getDaisy();
-        $where = strtolower((string) $where);
-
-        if (! preg_match('/^(root|start|\d+)$/', $where)) {
-            return $this->cli->error("Please specify 'root', 'start', or a daisy chain number.");
+        if ($where === null) {
+            return $this->cli->error("Please specify 'root', 'start', or a daisy chain branch.");
         }
 
-        $branch = match(strtolower($where)) {
-            'root' => $this->getRootBranch($daisy),
-            'start' => $daisy->getStartBranch(),
-            default => $daisy->withNumber((int) $where)->branch,
-        };
+        $daisy = $this->getDaisy();
+        $branch = $this->getGotoBranch($daisy, $where);
 
         $this->cli->runOrThrow(
             "git switch {$branch}",
-            "Could not switch to root branch {$branch}.",
+            "Could not switch to branch {$branch}.",
         );
 
         return $this->cli->info($this->getCurrentBranch());
+    }
+
+    protected function getGotoBranch(Daisy $daisy, string $where) : string
+    {
+        if (strtolower($where) === 'root') {
+            return $this->getRootBranch($daisy);
+        }
+
+        if (strtolower($where) === 'start') {
+            return $daisy->getStartBranch($daisy);
+        }
+
+        $branch = $daisy->getStartBranch() . $where;
+        $this->assertKnownBranch($branch);
+        return $branch;
     }
 
     public function branch() : int
@@ -288,7 +316,7 @@ class DaisyCommands
 
     public function chain() : int
     {
-        $chain = $this->getChain();
+        $chain = $this->getChainIncludingSuffixed();
         return $this->cli->info($chain);
     }
 
@@ -380,6 +408,8 @@ class DaisyCommands
 
     public function open() : int
     {
+        $daisy = $this->getDaisy();
+
         $result = $this->cli->runOrThrow(
             'git remote get-url origin',
             'Could not get origin URL.',
@@ -398,7 +428,6 @@ class DaisyCommands
             $repo = substr($repo, 0, -4);
         }
 
-        $daisy = $this->getDaisy();
         $prev = $this->getPrevBranch($daisy);
         $url = "https://github.com/{$owner}/{$repo}/compare/{$prev}...{$daisy->branch}";
         return $this->cli->run("open {$url}")->exitCode;
@@ -425,38 +454,16 @@ class DaisyCommands
         return $rm->isPublic();
     }
 
-    protected function deleteBranch(string $type, string $option, string $where) : int
+    protected function deleteBranch(string $type, string $option, ?string $where) : int
     {
         $daisy = $this->getDaisy();
-        $where = strtolower($where);
 
-        if (! preg_match('/^(first|next|prev|last|\d+)$/', $where)) {
-            return $this->cli->error(
-                "Please specify 'first', 'next', 'prev', 'last', or a daisy chain number."
-            );
+        if ($where === null) {
+            return $this->cli->error("Please specify a branch to {$type}.");
         }
 
-        $chain = $this->getChain();
-
-        if (! $chain) {
-            return $this->cli->error(
-                "There are no branches in this daisy chain."
-            );
-        }
-
-        $key = match ($where) {
-            'first' => reset($chain),
-            'prev' => ((int) array_search($daisy->branch, $chain)) - 1,
-            'next' => ((int) array_search($daisy->branch, $chain)) + 1,
-            'last' => end($chain),
-            default => $daisy->getNumberedBranch((int) $where),
-        };
-
-        $branch = $chain[$key] ?? null;
-
-        if (! $branch) {
-            return $this->cli->error("Unknown daisy chain location: {$where}");
-        }
+        $branch = $daisy->getStartBranch() . $where;
+        $this->assertKnownBranch($branch);
 
         if ($branch === $daisy->branch) {
             return $this->cli->error("Cannot {$type} current branch.");
@@ -537,6 +544,10 @@ class DaisyCommands
 
     protected function getPrevBranch(Daisy $daisy) : string
     {
+        if ($daisy->suffix) {
+            return $daisy->withoutSuffix()->branch;
+        }
+
         $chain = $this->getChain();
         $key = ((int) array_search($daisy->branch, $chain)) - 1;
         return $chain[$key] ?? $this->getRootBranch($daisy);
@@ -578,6 +589,22 @@ class DaisyCommands
     protected function getChain() : array
     {
         $chain = [];
+
+        foreach ($this->getChainIncludingSuffixed() as $branch) {
+            if (! Daisy::isSuffixed($branch)) {
+                $chain[] = $branch;
+            }
+        }
+
+        return $chain;
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getChainIncludingSuffixed() : array
+    {
+        $chain = [];
         $daisy = $this->getDaisy();
         $start = $daisy->getStartBranch();
 
@@ -610,6 +637,54 @@ class DaisyCommands
         return $this->cli->info($result->output);
     }
 
+    public function temp(?string $suffix, string ...$extras) : int
+    {
+        if (! $suffix) {
+            return $this->cli->error(
+                "Please give a suffix name for the temporary branch.",
+            );
+        }
+
+        if ($extras) {
+            return $this->cli->error(
+                "Cannot create a temporary branch with spaces in the suffix name.",
+            );
+        }
+
+        $this->cli->info("Creating a temporary branch from the daisy chain.");
+        $daisy = $this->getDaisy();
+
+        if ($daisy->suffix) {
+            return $this->cli->error(
+                "Already on a temporary branch.",
+            );
+        }
+
+        $temp = $daisy->withSuffix($suffix);
+
+        if (! $temp) {
+            return $this->cli->error(
+                "Cannot create a temporary branch with suffix '{$suffix}'.",
+            );
+        }
+
+        $this->cli->runOrThrow(
+            "git checkout -b {$temp->branch}",
+            "Could not create temporary branch {$temp->branch}.",
+        );
+
+        return $this->status();
+    }
+
+    protected function assertKnownBranch(string $branch)
+    {
+        $chain = $this->getChain();
+
+        if (! in_array($branch, $chain)) {
+            throw new RuntimeException("Unknown daisy chain branch: {$branch}");
+        }
+    }
+
     public function help() : int
     {
         return $this->cli->info(<<<'HELP'
@@ -621,14 +696,20 @@ class DaisyCommands
             Creation Commands:
 
                 start <name>
-                    Starts a new daisy chain of branches with the <name>
-                    prefix by creating a non-numbered "start" branch with an
-                    empty commit with a message indicating the "root" branch of
-                    the daisy chain. DO NOT work on this branch. It is for
-                    tracking the "root" branch only.
+                    Starts a new daisy chain of branches with the <name> prefix
+                    by creating a special "start" branch. The "start" branch is
+                    an empty commit with a message indicateing the "root" branch
+                    of the daisy chain. DO NOT work on this speical "start"
+                    branch. It is for tracking the "root" branch only.
 
                 add
                     Adds a numbered branch to the end of the daisy chain.
+
+                temp <suffix>
+                    Adds a temporary offshoot branch from the current numbered
+                    branch, appending a "-<suffix>" after the number. Note that
+                    the previous branch for a temporary branch is always the
+                    numbered branch from which it is an offshoot.
 
             Navigation Commands:
 
@@ -637,18 +718,17 @@ class DaisyCommands
 
                 prev [<steps>]
                     Switches to the previous numbered branch in the daisy chain,
-                    or any number of <steps> previous.
+                    or any number of <steps> back to the first numbered branch.
 
                 next [<steps>]
                     Switches to the next numbered branch in the daisy chain, or
-                    any number of <steps> next.
+                    any number of <steps> forward to the last numbered branch.
 
                 last
                     Switches to the last numbered branch in the daisy chain.
 
-                goto (root|start|<number>)
-                    Switches to the root branch, start branch, or a numbered
-                    daisy chain branch.
+                goto (root | start | <number>[-<suffix>])
+                    Switches to the specified branch in the daisy chain.
 
             Info Commands:
 
@@ -656,38 +736,43 @@ class DaisyCommands
                     Shows the current branch in the daisy chain.
 
                 chain
-                    Shows the list of branches in the daisy chain.
+                    Shows the list of branches in the daisy chain, including
+                    temporary offshoot branches.
 
                 diff [plain]
                     Shows the color diff between the current branch in the daisy
-                    chain and the previous branch (numbered or "root"). Passing
-                    'plain' shows a plain (not color) diff.
+                    chain and the previous numbered branch (or the "root" branch
+                    if on the first numbered branch). Passing 'plain' shows a
+                    plain (not color) diff. To paginate a color diff, pipe the
+                    output to `less -r`.
 
             Deletion Commands:
 
-                drop (first|prev|next|last|<number>)
+                drop (<number>[-<suffix>])
 
-                    Deletes the specified branch from the daisy chain
-                    using `git branch -d`.
+                    Deletes the specified branch from the daisy chain using
+                    `git branch -d`.
 
-                kill (first|prev|next|last|<number>)
+                kill (<number>[-<suffix>])
 
-                    Deletes the specified branch from the daisy chain
-                    using `git branch -D`.
+                    Deletes the specified branch from the daisy chain using
+                    `git branch -D`.
 
             Management Commands:
 
                 open
-                    Opens a comparison request for the current branch.
+                    Opens a comparison request at Github for the current branch
+                    against the previous numbered branch (or the "root" branch
+                    if on the first numbered branch).
 
                 send
-                    Force-pushes the current numbered branch in the daisy chain
-                    to origin, setting the upstream if not already set.
+                    Force-pushes the current branch in the daisy chain to the
+                    remote origin, setting the upstream if not already set.
 
                 sync
-                    Pulls from the remote origin (if there is one), then
-                    rebases the current numbered branch in the daisy chain on
-                    the previous branch (numbered or "root").
+                    Pulls from the remote origin, then rebases the current
+                    branch on the previous numbered branch (or the "root" branch
+                    if on the first numbered branch).
 
             HELP,
         );

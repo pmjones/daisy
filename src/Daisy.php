@@ -5,7 +5,9 @@ namespace pmjones\Daisy;
 
 readonly class Daisy
 {
-    protected const REGEX = '/^(.+)_@_(\d+)?$/';
+    //                         1               2            3 4
+    protected const REGEX = '/^(?<prefix>.+)_@_(?<number>\d+(-(?<suffix>[A-Z-a-z-0-9-_]+))?)?$/';
+    //                                     1                                          43 2
 
     public static function isValid(string $branch) : bool
     {
@@ -18,12 +20,19 @@ readonly class Daisy
         return $daisy?->number !== null;
     }
 
+    public static function isSuffixed(string $branch) : bool
+    {
+        $daisy = self::fromBranch($branch);
+        return $daisy?->suffix !== null;
+    }
+
     public static function fromStart(string $prefix) : self
     {
         return new self(
             branch: "{$prefix}_@_",
             prefix: $prefix,
             number: null,
+            suffix: null,
         );
     }
 
@@ -35,8 +44,9 @@ readonly class Daisy
 
         return new self(
             branch: $matches[0],
-            prefix: $matches[1],
-            number: $matches[2] === null ? null : (int) $matches[2],
+            prefix: $matches['prefix'],
+            number: $matches['number'] === null ? null : (int) $matches['number'],
+            suffix: $matches['suffix'],
         );
     }
 
@@ -44,6 +54,7 @@ readonly class Daisy
         public string $branch,
         public string $prefix,
         public ?int $number,
+        public ?string $suffix,
     ) {
     }
 
@@ -53,6 +64,31 @@ readonly class Daisy
             branch: "{$this->prefix}_@_{$number}",
             prefix: $this->prefix,
             number: $number,
+            suffix: null,
+        );
+    }
+
+    public function withSuffix(?string $suffix) : ?self
+    {
+        if (is_string($suffix) && ! ctype_graph($suffix)) {
+            return null;
+        }
+
+        return new self(
+            branch: "{$this->prefix}_@_{$this->number}-{$suffix}",
+            prefix: $this->prefix,
+            number: $this->number,
+            suffix: $suffix,
+        );
+    }
+
+    public function withoutSuffix() : self
+    {
+        return new self(
+            branch: "{$this->prefix}_@_{$this->number}",
+            prefix: $this->prefix,
+            number: $this->number,
+            suffix: null,
         );
     }
 
