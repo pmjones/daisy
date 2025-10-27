@@ -110,7 +110,7 @@ class DaisyCommands
             );
         }
 
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
         $add = $daisy->withNextNumber();
 
         if (in_array($add->branch, $chain)) {
@@ -137,7 +137,7 @@ class DaisyCommands
     public function first() : int
     {
         $daisy = $this->getDaisy()->withoutSuffix();
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
 
         if (! $chain) {
             return $this->cli->error(
@@ -183,7 +183,7 @@ class DaisyCommands
         }
 
         $steps = (int) $steps;
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
 
         if (! $chain) {
             return $this->cli->error(
@@ -220,7 +220,7 @@ class DaisyCommands
         }
 
         $steps = (int) $steps;
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
 
         if (! $chain) {
             return $this->cli->error(
@@ -254,7 +254,7 @@ class DaisyCommands
     public function last() : int
     {
         $daisy = $this->getDaisy()->withoutSuffix();
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
 
         if (! $chain) {
             return $this->cli->error(
@@ -316,7 +316,7 @@ class DaisyCommands
 
     public function chain() : int
     {
-        $chain = $this->getChainIncludingSuffixed();
+        $chain = $this->getChainWithSuffixed();
         return $this->cli->info($chain);
     }
 
@@ -548,7 +548,7 @@ class DaisyCommands
             return $daisy->withoutSuffix()->branch;
         }
 
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
         $key = ((int) array_search($daisy->branch, $chain)) - 1;
         return $chain[$key] ?? $this->getRootBranch($daisy);
     }
@@ -586,11 +586,11 @@ class DaisyCommands
     /**
      * @return string[]
      */
-    protected function getChain() : array
+    protected function getChainWithoutSuffixed() : array
     {
         $chain = [];
 
-        foreach ($this->getChainIncludingSuffixed() as $branch) {
+        foreach ($this->getChainWithSuffixed() as $branch) {
             if (! Daisy::isSuffixed($branch)) {
                 $chain[] = $branch;
             }
@@ -602,7 +602,7 @@ class DaisyCommands
     /**
      * @return string[]
      */
-    protected function getChainIncludingSuffixed() : array
+    protected function getChainWithSuffixed() : array
     {
         $chain = [];
         $daisy = $this->getDaisy();
@@ -641,7 +641,7 @@ class DaisyCommands
     {
         if (! $suffix) {
             return $this->cli->error(
-                "Please give a suffix name for the temporary branch.",
+                "Please give a suffix for the temporary branch.",
             );
         }
 
@@ -678,7 +678,7 @@ class DaisyCommands
 
     protected function assertKnownBranch(string $branch)
     {
-        $chain = $this->getChain();
+        $chain = $this->getChainWithoutSuffixed();
 
         if (! in_array($branch, $chain)) {
             throw new RuntimeException("Unknown daisy chain branch: {$branch}");
