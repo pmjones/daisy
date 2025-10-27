@@ -678,7 +678,7 @@ class DaisyCommands
 
     protected function assertKnownBranch(string $branch)
     {
-        $chain = $this->getChainWithoutSuffixed();
+        $chain = $this->getChainWithSuffixed();
 
         if (! in_array($branch, $chain)) {
             throw new RuntimeException("Unknown daisy chain branch: {$branch}");
