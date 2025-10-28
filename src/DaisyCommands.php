@@ -673,6 +673,13 @@ class DaisyCommands
             "Could not create temporary branch {$temp->branch}.",
         );
 
+        $message = ":daisy-chain-temp {$temp->branch}";
+
+        $this->cli->runOrThrow(
+            "git commit --allow-empty --message='{$message}'",
+            "Could not commit to temp daisy chain branch {$temp->branch}.",
+        );
+
         return $this->status();
     }
 
