@@ -756,12 +756,10 @@ class DaisyCommands
             Deletion Commands:
 
                 drop (<number>[-<suffix>])
-
                     Deletes the specified branch from the daisy chain using
                     `git branch -d`.
 
                 kill (<number>[-<suffix>])
-
                     Deletes the specified branch from the daisy chain using
                     `git branch -D`.
 
