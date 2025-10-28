@@ -705,8 +705,8 @@ class DaisyCommands
                 start <name>
                     Starts a new daisy chain of branches with the <name> prefix
                     by creating a special "start" branch. The "start" branch is
-                    an empty commit with a message indicateing the "root" branch
-                    of the daisy chain. DO NOT work on this speical "start"
+                    an empty commit with a message indicating the "root" branch
+                    of the daisy chain. DO NOT work on this special "start"
                     branch. It is for tracking the "root" branch only.
 
                 add
