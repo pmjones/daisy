@@ -14,6 +14,20 @@ At the time, I thought of these sequentially dependent git branches as a "daisy
 chain". This package takes those bash scripts and collects them into something
 more manageable.
 
+## Installation
+
+There are no releases yet; install the 0.x branch with Composer:
+
+```
+% composer global require pmjones/daisy 0.x-dev
+```
+
+I find it convenient to symlink it to a global path:
+
+```
+% ln -s ~/.composer/vendor/bin/daisy /usr/local/bin/daisy
+```
+
 ## Workflow
 
 From a "root" branch (e.g. `master` or `prod`) start a daisy chain like so:
@@ -21,7 +35,7 @@ From a "root" branch (e.g. `master` or `prod`) start a daisy chain like so:
 ```
 % daisy start refactor
 Starting a new daisy chain.
-Created daisy chain refactor_@_ from main.
+Created daisy chain refactor_@_ from prod.
 On branch refactor_@_0
 nothing to commit, working tree clean
 %
