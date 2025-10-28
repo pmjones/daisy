@@ -300,7 +300,7 @@ class DaisyCommands
         }
 
         if (strtolower($where) === 'start') {
-            return $daisy->getStartBranch($daisy);
+            return $daisy->getStartBranch();
         }
 
         $branch = $daisy->getStartBranch() . $where;
@@ -683,7 +683,7 @@ class DaisyCommands
         return $this->status();
     }
 
-    protected function assertKnownBranch(string $branch)
+    protected function assertKnownBranch(string $branch) : void
     {
         $chain = $this->getChainWithSuffixed();
 
